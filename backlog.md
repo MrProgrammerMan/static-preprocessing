@@ -13,6 +13,6 @@ The backlog contains an overview of work in this project. Seeing as this is a si
 - Output image sizes and formats to manifest.json.
 
 ## Doing
-- Read files in specified directory.
 
 ## Finished
+- Read files in specified directory.

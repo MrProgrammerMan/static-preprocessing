@@ -5,11 +5,11 @@
 Static preprocessing is a library that includes common functionality for preprocessing static files for use in web apps.
 
 ## Features
-There are currently no implemented features.
+The following features are implemented:
+- Hashing static files and renaming them.
 
 ## Planned features
 The following features are planned:
-- Hashing static files and renaming them.
 - Outputting name changes in a file manifest.json for use by the library or by other processes.
 - Minifying CSS and JavaScript files.
 - Resizing and reformatting images by specification.

@@ -131,7 +131,11 @@ pub fn compute_hashed_filename(path: &Path, file_contents: &[u8]) -> String {
 /// # Example
 ///
 /// ```
-/// // Example will be added here
+/// # use std::path::Path;
+/// # use static_preprocessing::create_output_directory;
+/// let output_dir = Path::new("output");
+/// let file_path = Path::new("static_files/css/main.css");
+/// create_output_directory(output_dir, file_path).unwrap();
 /// ```
 ///
 /// [`Path`]: std::path::Path

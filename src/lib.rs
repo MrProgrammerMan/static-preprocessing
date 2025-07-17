@@ -26,7 +26,6 @@ use std::fs;
 ///
 /// # Example
 /// ```
-///
 ///  # use std::fs;
 ///  # use std::path::PathBuf;
 ///  # use tempfile::TempDir;
@@ -93,7 +92,12 @@ pub fn for_each_file<F: FnMut(&Path) -> io::Result<()>>(dir: &Path, f: &mut F) -
 /// # Example
 ///
 /// ```
-/// // Example will be added here
+///  # use std::path::Path;
+///  # use static_preprocessing::compute_hashed_filename;
+///  let contents = "This is the contents of a text file.".as_bytes();
+///  let path = Path::new("file.txt");
+///  let hash = compute_hashed_filename(path, contents);
+///  assert_eq!(hash.as_str(), "54d6c1211787e4f3e257ba41a3abf553436f578e93ba56555945c7222932733c.txt");
 /// ```
 ///
 /// [`Path`]: std::path::Path

@@ -31,7 +31,7 @@ use std::fs;
 /// use std::io;
 ///
 /// fn main() -> io::Result<()> {
-///     for_each_file(Path::new("./some_dir"), &|path| {
+///     static_preprocessing::for_each_file(Path::new("./some_dir"), &|path| {
 ///         println!("Found file: {}", path.display());
 ///     })
 /// }

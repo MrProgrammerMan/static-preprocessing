@@ -2,7 +2,6 @@
 The backlog contains an overview of work in this project. Seeing as this is a simple solo project, I'm making it double as a kanban board.
 
 ## TODO
-- Read files in specified directory.
 - Process each file.
 - Hash each file.
 - Save each file renamed to output directory.
@@ -14,5 +13,6 @@ The backlog contains an overview of work in this project. Seeing as this is a si
 - Output image sizes and formats to manifest.json.
 
 ## Doing
+- Read files in specified directory.
 
 ## Finished

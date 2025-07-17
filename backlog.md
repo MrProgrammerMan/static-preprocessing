@@ -10,6 +10,7 @@ The backlog contains an overview of work in this project. Seeing as this is a si
 - Output image sizes and formats to manifest.json.
 
 ## Doing
+- Create examples and implement unit testing.
 
 ## Finished
 - Read files in specified directory.

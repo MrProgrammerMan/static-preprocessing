@@ -2,9 +2,6 @@
 The backlog contains an overview of work in this project. Seeing as this is a simple solo project, I'm making it double as a kanban board.
 
 ## TODO
-- Process each file.
-- Hash each file.
-- Save each file renamed to output directory.
 - Output manifest.json with info of renamed files.
 - Minify CSS.
 - Minify JS.
@@ -13,6 +10,9 @@ The backlog contains an overview of work in this project. Seeing as this is a si
 - Output image sizes and formats to manifest.json.
 
 ## Doing
+- Process each file.
+- Hash each file.
+- Save each file renamed to output directory.
 
 ## Finished
 - Read files in specified directory.

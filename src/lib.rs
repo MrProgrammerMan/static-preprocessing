@@ -329,3 +329,112 @@ pub fn detect_file_type(ext: &str) -> FileType {
         _ => FileType::Other,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::{self, File as FsFile};
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_load_file_valid_file() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("example.css");
+        let mut file = FsFile::create(&file_path).unwrap();
+        writeln!(file, "body {{ background: #fff; }}").unwrap();
+
+        let loaded = load_file(dir.path(), Path::new("example.css")).unwrap();
+        assert_eq!(loaded.relative_path, Path::new("example.css"));
+        assert!(matches!(loaded.file_type, FileType::CSS));
+        assert_eq!(loaded.contents, b"body { background: #fff; }\n");
+    }
+
+    #[test]
+    fn test_load_file_invalid_extension() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("example");
+        let mut file = FsFile::create(&file_path).unwrap();
+        writeln!(file, "content").unwrap();
+
+        let result = load_file(dir.path(), Path::new("example"));
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn test_save_file() {
+        let dir = tempdir().unwrap();
+        let file = File {
+            parent: dir.path(),
+            relative_path: "hello.txt".into(),
+            file_type: FileType::Other,
+            contents: b"Hello, world!".to_vec(),
+        };
+
+        save_file(&file).unwrap();
+        let written = fs::read_to_string(dir.path().join("hello.txt")).unwrap();
+        assert_eq!(written, "Hello, world!");
+    }
+
+    #[test]
+    fn test_create_dir_structure() {
+        let dir = tempdir().unwrap();
+        let file = File {
+            parent: Path::new("input"),
+            relative_path: Path::new("nested/dir/file.txt").to_path_buf(),
+            file_type: FileType::Other,
+            contents: b"example".to_vec(),
+        };
+
+        create_dir_structure(dir.path(), &file).unwrap();
+        let created_path = dir.path().join("nested/dir");
+        assert!(created_path.exists());
+    }
+
+    #[test]
+    fn test_for_each_file() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("foo.txt");
+        let mut file = FsFile::create(&file_path).unwrap();
+        writeln!(file, "Hello").unwrap();
+
+        let mut count = 0;
+        for_each_file(dir.path(), &mut |path| {
+            if path.is_file() {
+                count += 1;
+            }
+            Ok(())
+        })
+        .unwrap();
+
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test_detect_file_type() {
+        assert!(matches!(detect_file_type("css"), FileType::CSS));
+        assert!(matches!(detect_file_type("js"), FileType::JS));
+        assert!(matches!(detect_file_type("png"), FileType::Image));
+        assert!(matches!(detect_file_type("txt"), FileType::Other));
+    }
+
+    #[test]
+    fn test_process_directory() {
+        let input_dir = tempdir().unwrap();
+        let output_dir = tempdir().unwrap();
+
+        let file_path = input_dir.path().join("example.txt");
+        let mut file = FsFile::create(&file_path).unwrap();
+        writeln!(file, "static content").unwrap();
+
+        process_directory(input_dir.path(), output_dir.path()).unwrap();
+
+        let entries: Vec<_> = fs::read_dir(output_dir.path())
+            .unwrap()
+            .flat_map(|res| res.ok())
+            .collect();
+
+        assert!(!entries.is_empty());
+    }
+}

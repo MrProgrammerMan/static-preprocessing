@@ -2,7 +2,6 @@
 The backlog contains an overview of work in this project. Seeing as this is a simple solo project, I'm making it double as a kanban board.
 
 ## TODO
-- Output manifest.json with info of renamed files.
 - Minify CSS.
 - Minify JS.
 - Reformat images by specification.
@@ -10,9 +9,10 @@ The backlog contains an overview of work in this project. Seeing as this is a si
 - Output image sizes and formats to manifest.json.
 
 ## Doing
-- Create examples and implement unit testing.
+- Output manifest.json with info of renamed files.
 
 ## Finished
+- Create examples and implement unit testing.
 - Read files in specified directory.
 - Process each file.
 - Hash each file.

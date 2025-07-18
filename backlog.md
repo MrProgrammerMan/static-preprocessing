@@ -9,7 +9,6 @@ The backlog contains an overview of work in this project. Seeing as this is a si
 - Output image sizes and formats to manifest.json.
 
 ## Doing
-- Output manifest.json with info of renamed files.
 
 ## Finished
 - Create examples and implement unit testing.
@@ -17,3 +16,4 @@ The backlog contains an overview of work in this project. Seeing as this is a si
 - Process each file.
 - Hash each file.
 - Save each file renamed to output directory.
+- Output manifest.json with info of renamed files.

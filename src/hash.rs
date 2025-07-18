@@ -55,3 +55,58 @@ pub fn hash_file_rename(file: File) -> Result<File, io::Error> {
         ..file
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+    use crate::FileType;
+
+    #[test]
+    fn test_hash_file_rename_valid_file() {
+        let file = File {
+            parent: Path::new("assets"),
+            relative_path: "css/main.css".into(),
+            file_type: FileType::CSS,
+            contents: b"body { margin: 0; }".to_vec(),
+        };
+
+        let renamed = hash_file_rename(file).unwrap();
+        assert!(renamed.relative_path.to_string_lossy().ends_with(".css"));
+        assert_eq!(
+            renamed.relative_path,
+            Path::new("css/057b37e61c8ec35690e7c0c321591990d37b9bdbef645cd780795a95672d65c0.css")
+        );
+    }
+
+    #[test]
+    fn test_hash_file_rename_invalid_extension() {
+        let file = File {
+            parent: Path::new("assets"),
+            relative_path: "css/main".into(), // No extension
+            file_type: FileType::CSS,
+            contents: b"body { margin: 0; }".to_vec(),
+        };
+
+        let result = hash_file_rename(file);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn test_hash_file_rename_empty_contents() {
+        let file = File {
+            parent: Path::new("assets"),
+            relative_path: "css/main.css".into(),
+            file_type: FileType::CSS,
+            contents: vec![], // Empty contents
+        };
+
+        let renamed = hash_file_rename(file).unwrap();
+        assert!(renamed.relative_path.to_string_lossy().ends_with(".css"));
+        assert_eq!(
+            renamed.relative_path,
+            Path::new("css/af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262.css")
+        );
+    }
+}

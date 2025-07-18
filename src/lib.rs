@@ -5,6 +5,7 @@ use hash::hash_file_rename;
 
 pub mod hash;
 
+#[derive(Debug, PartialEq)]
 pub enum FileType {
     Image,
     CSS,
@@ -12,6 +13,7 @@ pub enum FileType {
     Other
 }
 
+#[derive(Debug)]
 pub struct File<'a> {
     pub parent: &'a Path,
     pub relative_path: PathBuf,

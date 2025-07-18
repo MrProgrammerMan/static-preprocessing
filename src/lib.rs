@@ -237,7 +237,49 @@ pub fn create_dir_structure(output_dir: &Path, file: &File) -> io::Result<()> {
     fs::create_dir_all(parent)
 }
 
-// impure (fs::read_dir)
+/// Recursively traverses a directory tree, applying a function to each file found.
+///
+/// This function walks through the directory at `path` and all its subdirectories,
+/// calling the provided closure `f` on every file encountered. If `path` itself is a
+/// file, the closure is applied directly.
+///
+/// # Parameters
+///
+/// - `path`: The starting directory or file path to traverse.
+/// - `f`: A mutable closure that takes a reference to a [`Path`] and returns an [`io::Result<()>`].
+///
+/// # Returns
+///
+/// [`Ok(())`] if all files were processed successfully, or the first [`io::Error`] encountered.
+///
+/// # Examples
+///
+/// ```
+/// # use std::fs::{self, File as FsFile};
+/// # use std::io::Write;
+/// # use std::path::Path;
+/// # use tempfile::tempdir;
+/// # use static_preprocessing::for_each_file;
+/// #
+/// let temp = tempdir().unwrap();
+/// let file_path = temp.path().join("foo.txt");
+/// let mut file = FsFile::create(&file_path).unwrap();
+/// writeln!(file, "Hello").unwrap();
+///
+/// let mut count = 0;
+/// for_each_file(temp.path(), &mut |path| {
+///     if path.is_file() {
+///         count += 1;
+///     }
+///     Ok(())
+/// }).unwrap();
+///
+/// assert_eq!(count, 1);
+/// ```
+///
+/// [`Path`]: https://doc.rust-lang.org/std/path/struct.Path.html
+/// [`Ok(())`]: https://doc.rust-lang.org/std/result/enum.Result.html#variant.Ok
+/// [`io::Error`]: https://doc.rust-lang.org/std/io/struct.Error.html
 pub fn for_each_file<F: FnMut(&Path) -> io::Result<()>>(path: &Path, f: &mut F) -> io::Result<()> {
     if path.is_dir() {
         for entry in fs::read_dir(path)? {

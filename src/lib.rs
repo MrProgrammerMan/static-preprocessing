@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::io;
 use std::fs;
@@ -178,6 +179,7 @@ pub fn save_file(file: &File) -> Result<(), io::Error> {
 /// [`Ok`]: https://doc.rust-lang.org/std/result/enum.Result.html#variant.Ok
 /// [`io::Error`]: https://doc.rust-lang.org/std/io/struct.Error.html
 pub fn process_directory(input_dir: &Path, output_dir: &Path) -> Result<(), io::Error> {
+    let mut manifest: HashMap<String, String> = HashMap::new();
     fs::create_dir_all(output_dir)?;
     for_each_file(input_dir, &mut |path| {
         let relative_path = path.strip_prefix(input_dir).map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Invalid file"))?;
@@ -188,9 +190,17 @@ pub fn process_directory(input_dir: &Path, output_dir: &Path) -> Result<(), io::
             parent: output_dir,
             ..hashed_file
         };
+        manifest.insert(
+            path.strip_prefix(&input_dir).unwrap().to_owned().to_str().unwrap().to_string(),
+            output_file.relative_path.to_str().unwrap().to_string());
         save_file(&output_file)?;
         Ok(())
-    })
+    })?;
+    let manifest_path = output_dir.join("manifest.json");
+    let json = serde_json::to_string_pretty(&manifest)
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+    fs::write(manifest_path, json)?;
+    Ok(())
 }
 
 /// Ensures that the directory structure for a file exists within an output directory.

@@ -134,11 +134,8 @@ pub fn save_file(file: &File) -> Result<(), io::Error> {
 /// and saving it under a new filename based on the BLAKE3 hash. The original directory structure
 /// is preserved in `output_dir`, and all necessary subdirectories are created automatically.
 ///
-/// The transformation process includes:
-/// - Reading each file
-/// - Hashing its contents for a unique filename
-/// - Creating the appropriate output directory structure
-/// - Writing the renamed file to the output directory
+/// Additionally, a `manifest.json` file is created in the `output_dir`, mapping original filenames
+/// (relative to `input_dir`) to their hashed filenames.
 ///
 /// # Parameters
 ///
@@ -148,6 +145,11 @@ pub fn save_file(file: &File) -> Result<(), io::Error> {
 /// # Returns
 ///
 /// [`Ok`] if all files were processed successfully, or an [`io::Error`] if any file or directory operation fails.
+///
+/// # Manifest File
+///
+/// The `manifest.json` file contains a JSON object where each key is the original relative path
+/// of a file (from `input_dir`), and the value is the hashed filename (relative to `output_dir`).
 ///
 /// # Examples
 ///
@@ -175,32 +177,53 @@ pub fn save_file(file: &File) -> Result<(), io::Error> {
 ///
 /// assert!(!entries.is_empty());
 /// ```
-///
-/// [`Ok`]: https://doc.rust-lang.org/std/result/enum.Result.html#variant.Ok
-/// [`io::Error`]: https://doc.rust-lang.org/std/io/struct.Error.html
 pub fn process_directory(input_dir: &Path, output_dir: &Path) -> Result<(), io::Error> {
-    let mut manifest: HashMap<String, String> = HashMap::new();
     fs::create_dir_all(output_dir)?;
+
+    let mut manifest = HashMap::new();
+
     for_each_file(input_dir, &mut |path| {
-        let relative_path = path.strip_prefix(input_dir).map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Invalid file"))?;
-        let input_file = load_file(input_dir, relative_path)?;
-        create_dir_structure(output_dir, &input_file)?;
-        let hashed_file = hash_file_rename(input_file)?;
-        let output_file = File {
-            parent: output_dir,
-            ..hashed_file
-        };
-        manifest.insert(
-            path.strip_prefix(&input_dir).unwrap().to_owned().to_str().unwrap().to_string(),
-            output_file.relative_path.to_str().unwrap().to_string());
-        save_file(&output_file)?;
-        Ok(())
+        process_file(path, input_dir, output_dir, &mut manifest)
     })?;
-    let manifest_path = output_dir.join("manifest.json");
-    let json = serde_json::to_string_pretty(&manifest)
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-    fs::write(manifest_path, json)?;
+
+    write_manifest(output_dir, &manifest)?;
+
     Ok(())
+}
+
+/// Processes a single file: loads it, hashes its name, and saves it to the output directory.
+fn process_file(
+    path: &Path,
+    input_dir: &Path,
+    output_dir: &Path,
+    manifest: &mut HashMap<String, String>,
+) -> Result<(), io::Error> {
+    let relative_path = path
+        .strip_prefix(input_dir)
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Invalid file"))?;
+    let input_file = load_file(input_dir, relative_path)?;
+    create_dir_structure(output_dir, &input_file)?;
+    let hashed_file = hash_file_rename(input_file)?;
+
+    let output_file = File {
+        parent: output_dir,
+        ..hashed_file
+    };
+
+    manifest.insert(
+        relative_path.to_string_lossy().to_string(),
+        output_file.relative_path.to_string_lossy().to_string(),
+    );
+
+    save_file(&output_file)
+}
+
+/// Writes the manifest file to the output directory.
+fn write_manifest(output_dir: &Path, manifest: &HashMap<String, String>) -> Result<(), io::Error> {
+    let manifest_path = output_dir.join("manifest.json");
+    let json = serde_json::to_string_pretty(manifest)
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+    fs::write(manifest_path, json)
 }
 
 /// Ensures that the directory structure for a file exists within an output directory.

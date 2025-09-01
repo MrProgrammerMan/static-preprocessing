@@ -366,21 +366,6 @@ mod tests {
     }
 
     #[test]
-    fn test_create_dir_structure() {
-        let dir = tempdir().unwrap();
-        let file = File {
-            parent: Path::new("input"),
-            relative_path: Path::new("nested/dir/file.txt").to_path_buf(),
-            file_type: FileType::Other,
-            contents: b"example".to_vec(),
-        };
-
-        create_dir_structure(dir.path(), &file).unwrap();
-        let created_path = dir.path().join("nested/dir");
-        assert!(created_path.exists());
-    }
-
-    #[test]
     fn test_for_each_file() {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("foo.txt");

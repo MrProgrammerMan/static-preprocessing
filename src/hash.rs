@@ -1,5 +1,6 @@
 use std::io;
 use crate::File;
+use std::path::PathBuf;
 
 /// Renames a [`File`] based on the BLAKE3 hash of its contents.
 ///
@@ -46,12 +47,8 @@ pub fn hash_file_rename(file: File) -> Result<File, io::Error> {
         .and_then(|ext| ext.to_str())
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Invalid file extension."))?;
     let new_name = format!("{}.{}", hash.to_string(), ext);
-    let new_relative = file.relative_path
-        .parent()
-        .map(|parent| parent.join(new_name))
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "No parent directory"))?;
     Ok(File {
-        relative_path: new_relative,
+        relative_path: PathBuf::from(new_name),
         ..file
     })
 }

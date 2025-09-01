@@ -178,7 +178,7 @@ pub fn save_file(file: &File) -> Result<(), io::Error> {
 /// assert!(!entries.is_empty());
 /// ```
 pub fn process_directory(input_dir: &Path, output_dir: &Path) -> Result<(), io::Error> {
-    fs::create_dir_all(output_dir)?;
+    fs::create_dir(output_dir)?;
 
     let mut manifest = HashMap::new();
 
@@ -201,8 +201,9 @@ fn process_file(
     let relative_path = path
         .strip_prefix(input_dir)
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Invalid file"))?;
+    
     let input_file = load_file(input_dir, relative_path)?;
-    create_dir_structure(output_dir, &input_file)?;
+    
     let hashed_file = hash_file_rename(input_file)?;
 
     let output_file = File {
@@ -224,52 +225,6 @@ fn write_manifest(output_dir: &Path, manifest: &HashMap<String, String>) -> Resu
     let json = serde_json::to_string_pretty(manifest)
         .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
     fs::write(manifest_path, json)
-}
-
-/// Ensures that the directory structure for a file exists within an output directory.
-///
-/// This function creates all necessary parent directories for the given [`File`]’s
-/// `relative_path`, rooted at the specified `output_dir`. It is useful when preparing
-/// a destination directory tree before writing files.
-///
-/// # Parameters
-///
-/// - `output_dir`: The root output directory where the file should be placed.
-/// - `file`: The [`File`] whose `relative_path` determines the target location.
-///
-/// # Returns
-///
-/// An empty [`Ok`] result on success, or an [`io::Error`] if the path is invalid or
-/// directory creation fails.
-///
-/// # Examples
-///
-/// ```
-/// # use std::path::Path;
-/// # use tempfile::tempdir;
-/// # use static_preprocessing::{File, FileType, create_dir_structure};
-/// #
-/// let temp = tempdir().unwrap();
-/// let file = File {
-///     parent: Path::new("input"),
-///     relative_path: Path::new("nested/dir/file.txt").to_path_buf(),
-///     file_type: FileType::Other,
-///     contents: b"example".to_vec(),
-/// };
-///
-/// create_dir_structure(temp.path(), &file).unwrap();
-///
-/// let created_path = temp.path().join("nested/dir");
-/// assert!(created_path.exists());
-/// ```
-///
-/// [`File`]: struct.File.html
-/// [`Ok`]: https://doc.rust-lang.org/std/result/enum.Result.html#variant.Ok
-/// [`io::Error`]: https://doc.rust-lang.org/std/io/struct.Error.html
-pub fn create_dir_structure(output_dir: &Path, file: &File) -> io::Result<()> {
-    let path = output_dir.join(&file.relative_path);
-    let parent = path.parent().ok_or(io::Error::new(io::ErrorKind::InvalidInput, "Invalid file"))?;
-    fs::create_dir_all(parent)
 }
 
 /// Recursively traverses a directory tree, applying a function to each file found.

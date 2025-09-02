@@ -3,6 +3,10 @@ use std::path::Path;
 use std::io;
 use std::fs;
 use hash::hash_file_rename;
+use lightningcss::printer::PrinterOptions;
+use lightningcss::stylesheet::MinifyOptions;
+use lightningcss::stylesheet::ParserOptions;
+use lightningcss::stylesheet::StyleSheet;
 
 pub mod hash;
 
@@ -178,8 +182,20 @@ fn process_file(
     manifest: &mut HashMap<String, String>,
 ) -> Result<(), io::Error> {
     let input_file = load_file(path)?;
+
+    let minified_file = match input_file.file_type {
+        FileType::CSS => {
+            let mut ss = StyleSheet::parse(std::str::from_utf8(&input_file.contents).unwrap(), ParserOptions::default()).unwrap();
+            ss.minify(MinifyOptions::default()).unwrap();
+            File {
+                contents: ss.to_css(PrinterOptions{minify: true, ..PrinterOptions::default()}).unwrap().code.into_bytes(),
+                ..input_file
+            }
+        },
+        _ => input_file
+    };
     
-    let hashed_file = hash_file_rename(input_file)?;
+    let hashed_file = hash_file_rename(minified_file)?;
 
     manifest.insert(
         path.to_string_lossy().to_string(),

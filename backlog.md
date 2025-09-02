@@ -5,13 +5,15 @@ The backlog contains an overview of work in this project. Seeing as this is a si
 - Reformat images by specification.
 - Resize images by specification.
 - Output image sizes and formats to manifest.json.
-
-## Doing
-- Minify CSS.
 - Minify JS.
 
+## Doing
+- Refactor CSS minification implementation.
+- Implement unit testing.
+
 ## Finished
-- Create examples and implement unit testing.
+- Minify CSS.
+- Create examples.
 - Read files in specified directory.
 - Process each file.
 - Hash each file.

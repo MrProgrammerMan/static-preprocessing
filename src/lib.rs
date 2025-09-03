@@ -183,19 +183,9 @@ fn process_file(
 ) -> Result<(), io::Error> {
     let input_file = load_file(path)?;
 
-    let minified_file = match input_file.file_type {
-        FileType::CSS => {
-            let mut ss = StyleSheet::parse(std::str::from_utf8(&input_file.contents).unwrap(), ParserOptions::default()).unwrap();
-            ss.minify(MinifyOptions::default()).unwrap();
-            File {
-                contents: ss.to_css(PrinterOptions{minify: true, ..PrinterOptions::default()}).unwrap().code.into_bytes(),
-                ..input_file
-            }
-        },
-        _ => input_file
-    };
+    let minified_css = minify_css(input_file);
     
-    let hashed_file = hash_file_rename(minified_file)?;
+    let hashed_file = hash_file_rename(minified_css)?;
 
     manifest.insert(
         path.to_string_lossy().to_string(),
@@ -203,6 +193,20 @@ fn process_file(
     );
 
     save_file(output_dir, &hashed_file)
+}
+
+fn minify_css(f: File) ->  File {
+    match f.file_type {
+        FileType::CSS => {
+            let mut ss = StyleSheet::parse(std::str::from_utf8(&f.contents).unwrap(), ParserOptions::default()).unwrap();
+            ss.minify(MinifyOptions::default()).unwrap();
+            File {
+                contents: ss.to_css(PrinterOptions{minify: true, ..PrinterOptions::default()}).unwrap().code.into_bytes(),
+                ..f
+            }
+        },
+        _ => f
+    }
 }
 
 /// Writes the manifest file to the output directory as pretty-printed JSON.

@@ -389,4 +389,36 @@ mod tests {
         let expected_manifest = serde_json::to_string_pretty(&manifest).unwrap();
         assert_eq!(written_manifest, expected_manifest);
     }
+
+    #[test]
+    fn test_for_each_file() {
+        use std::fs::{self, File as FsFile};
+        use std::io::Write;
+        use tempfile::tempdir;
+
+        // Create a temporary directory with some files and subdirectories
+        let temp = tempdir().unwrap();
+        let file1_path = temp.path().join("file1.txt");
+        let file2_path = temp.path().join("subdir").join("file2.txt");
+
+        // Create the files
+        fs::create_dir(temp.path().join("subdir")).unwrap();
+        let mut file1 = FsFile::create(&file1_path).unwrap();
+        writeln!(file1, "File 1 contents").unwrap();
+        let mut file2 = FsFile::create(&file2_path).unwrap();
+        writeln!(file2, "File 2 contents").unwrap();
+
+        // Use for_each_file to count the files
+        let mut count = 0;
+        for_each_file(temp.path(), &mut |path| {
+            if path.is_file() {
+                count += 1;
+            }
+            Ok(())
+        })
+        .unwrap();
+
+        // Verify that both files were counted
+        assert_eq!(count, 2);
+    }
 }

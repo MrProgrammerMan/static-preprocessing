@@ -522,4 +522,56 @@ mod tests {
         let processed_contents = fs::read_to_string(output_file_path).unwrap();
         assert!(processed_contents.contains("body{color:red}"));
     }
+
+    #[test]
+    fn test_process_directory() {
+        use std::fs::{self, File as FsFile};
+        use std::io::Write;
+        use tempfile::tempdir;
+
+        // Create temporary directories for input and output
+        let input_dir = tempdir().unwrap();
+        let output_dir = tempdir().unwrap();
+
+        // Create sample input files
+        let input_file1_path = input_dir.path().join("example1.css");
+        let input_file2_path = input_dir.path().join("example2.js");
+        let mut input_file1 = FsFile::create(&input_file1_path).unwrap();
+        let mut input_file2 = FsFile::create(&input_file2_path).unwrap();
+        writeln!(input_file1, "body {{ color: red; }}").unwrap();
+        writeln!(input_file2, "console.log('Hello, world!');").unwrap();
+
+        // Process the directory
+        process_directory(input_dir.path(), output_dir.path()).unwrap();
+
+        // Verify the output directory contains processed files
+        let output_files: Vec<_> = fs::read_dir(output_dir.path())
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .collect();
+
+        assert!(!output_files.is_empty());
+
+        // Verify the manifest file exists
+        let manifest_path = output_dir.path().join("manifest.json");
+        assert!(manifest_path.exists());
+
+        // Verify the manifest file contents
+        let manifest_contents = fs::read_to_string(manifest_path).unwrap();
+        let manifest: HashMap<String, String> = serde_json::from_str(&manifest_contents).unwrap();
+        assert!(manifest.contains_key(&input_file1_path.to_string_lossy().to_string()));
+        assert!(manifest.contains_key(&input_file2_path.to_string_lossy().to_string()));
+
+        // Verify the processed CSS file is minified
+        let hashed_filename = manifest.get(&input_file1_path.to_string_lossy().to_string()).unwrap();
+        let processed_css_path = output_dir.path().join(hashed_filename);
+        let processed_css_contents = fs::read_to_string(processed_css_path).unwrap();
+        assert!(processed_css_contents.contains("body{color:red}"));
+
+        // Verify the JS file is unchanged
+        let hashed_filename = manifest.get(&input_file2_path.to_string_lossy().to_string()).unwrap();
+        let processed_js_path = output_dir.path().join(hashed_filename);
+        let processed_js_contents = fs::read_to_string(processed_js_path).unwrap();
+        assert!(processed_js_contents.contains("console.log('Hello, world!');"));
+    }
 }

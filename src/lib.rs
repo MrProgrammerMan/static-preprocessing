@@ -309,4 +309,12 @@ mod tests {
             assert!(detect_file_type(img_type) == FileType::Image);
         }
     }
+
+    #[test]
+    fn test_detect_file_type_negative() {
+        let non_recognized_types = Vec::from(["gif", "tiff", "docx", "thing", "stl", "a", "file", "txt"]);
+        for non_type in non_recognized_types {
+            assert!(detect_file_type(non_type) == FileType::Other);
+        }
+    }
 }

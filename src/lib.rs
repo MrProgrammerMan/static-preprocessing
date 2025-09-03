@@ -459,4 +459,36 @@ mod tests {
         // Verify that both files were counted
         assert_eq!(count, 2);
     }
+
+    #[test]
+    fn test_minify_css() {
+        use std::str;
+
+        let input_file = File {
+            filename: "example.css".into(),
+            file_type: FileType::CSS,
+            contents: b"body { color: red; }  /* comment */".to_vec(),
+        };
+
+        let result = minify_css(input_file).unwrap();
+
+        assert_eq!(result.file_type, FileType::CSS);
+        assert_eq!(result.filename, "example.css");
+        assert!(str::from_utf8(&result.contents).unwrap().contains("body{color:red}"));
+    }
+
+    #[test]
+    fn test_minify_css_non_css_file() {
+        let input_file = File {
+            filename: "example.txt".into(),
+            file_type: FileType::Other,
+            contents: b"Some random text".to_vec(),
+        };
+
+        let result = minify_css(input_file).unwrap();
+
+        assert_eq!(result.file_type, FileType::Other);
+        assert_eq!(result.filename, "example.txt");
+        assert_eq!(result.contents, b"Some random text");
+    }
 }

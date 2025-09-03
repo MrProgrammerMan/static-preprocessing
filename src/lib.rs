@@ -491,4 +491,35 @@ mod tests {
         assert_eq!(result.filename, "example.txt");
         assert_eq!(result.contents, b"Some random text");
     }
+
+    #[test]
+    fn test_process_file() {
+        use std::fs::{self, File as FsFile};
+        use std::io::Write;
+        use tempfile::tempdir;
+
+        // Create temporary directories for input and output
+        let input_dir = tempdir().unwrap();
+        let output_dir = tempdir().unwrap();
+
+        // Create a sample input file
+        let input_file_path = input_dir.path().join("example.css");
+        let mut input_file = FsFile::create(&input_file_path).unwrap();
+        writeln!(input_file, "body {{ color: red; }}").unwrap();
+
+        // Create a manifest to track processed files
+        let mut manifest = HashMap::new();
+
+        // Process the file
+        process_file(&input_file_path, output_dir.path(), &mut manifest).unwrap();
+
+        // Verify the manifest contains the correct mapping
+        let hashed_filename = manifest.get(&input_file_path.to_string_lossy().to_string()).unwrap();
+        let output_file_path = output_dir.path().join(hashed_filename);
+        assert!(output_file_path.exists());
+
+        // Verify the contents of the processed file
+        let processed_contents = fs::read_to_string(output_file_path).unwrap();
+        assert!(processed_contents.contains("body{color:red}"));
+    }
 }

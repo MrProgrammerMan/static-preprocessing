@@ -295,3 +295,18 @@ pub fn detect_file_type(ext: &str) -> FileType {
         _ => FileType::Other,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_detect_file_type() {
+        assert!(detect_file_type("css") == FileType::CSS);
+        assert!(detect_file_type("js") == FileType::JS);
+        let img_types = Vec::from(["webp", "jpg", "jpeg", "png", "avif"]);
+        for img_type in img_types {
+            assert!(detect_file_type(img_type) == FileType::Image);
+        }
+    }
+}

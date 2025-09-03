@@ -317,4 +317,29 @@ mod tests {
             assert!(detect_file_type(non_type) == FileType::Other);
         }
     }
+
+    #[test]
+    fn test_load_file() {
+        use std::fs::File as FsFile;
+        use std::io::Write;
+        use tempfile::tempdir;
+        
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("example.css");
+        let mut file = FsFile::create(&path).unwrap();
+        writeln!(file, "body {{ background: #fff; }}").unwrap();
+
+        let loaded = load_file(&path).unwrap();
+        assert_eq!(loaded.filename, path.file_name().unwrap().to_string_lossy());
+        assert!(loaded.file_type == FileType::CSS);
+        assert!(loaded.contents == b"body { background: #fff; }\n");
+    }
+
+    #[test]
+    fn test_load_file_negative() {
+        let res = load_file(Path::new("non/existant/thispathdefinatelyhouldnevereverexistanywhere/path.file"));
+        if let Ok(_) = res {
+            panic!("Invalid file loaded");
+        }
+    }
 }

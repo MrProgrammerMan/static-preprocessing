@@ -358,4 +358,35 @@ mod tests {
         let written = fs::read_to_string(dir.path().join("hello.txt")).unwrap();
         assert_eq!(written, "Hello, world!");
     }
+
+    #[test]
+    fn test_write_manifest() {
+        use std::fs;
+        use tempfile::tempdir;
+
+        let dir = tempdir().unwrap();
+        let output_dir = dir.path();
+
+        // Create a sample manifest
+        let mut manifest = HashMap::new();
+        manifest.insert(
+            "/input/example.css".to_string(),
+            "example-hashed.css".to_string(),
+        );
+        manifest.insert(
+            "/input/script.js".to_string(),
+            "script-hashed.js".to_string(),
+        );
+
+        // Write the manifest to the output directory
+        write_manifest(output_dir, &manifest).unwrap();
+
+        // Read the manifest file back
+        let manifest_path = output_dir.join("manifest.json");
+        let written_manifest = fs::read_to_string(manifest_path).unwrap();
+
+        // Verify the contents of the manifest file
+        let expected_manifest = serde_json::to_string_pretty(&manifest).unwrap();
+        assert_eq!(written_manifest, expected_manifest);
+    }
 }

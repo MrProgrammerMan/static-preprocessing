@@ -57,12 +57,12 @@ pub struct File {
 /// let dir = tempdir().unwrap();
 /// let path = dir.path().join("example.css");
 /// let mut file = FsFile::create(&path).unwrap();
-/// writeln!(file, "body { background: #fff; }").unwrap();
+/// writeln!(file, "body {{ background: #fff; }}").unwrap();
 ///
 /// let loaded = load_file(&path).unwrap();
-/// assert_eq!(loaded.filename, "example.css");
-/// assert!(matches!(loaded.file_type, FileType::CSS));
-/// assert_eq!(loaded.contents, b"body { background: #fff; }\n");
+/// assert_eq!(loaded.filename, path.file_name().unwrap().to_string_lossy());
+/// assert!(loaded.file_type == FileType::CSS);
+/// assert!(loaded.contents == b"body { background: #fff; }\n");
 /// ```
 pub fn load_file(path: &Path) -> Result<File, io::Error> {
     Ok(File {
@@ -162,7 +162,7 @@ pub fn save_file(output_dir: &Path, file: &File) -> Result<(), io::Error> {
 /// assert!(!entries.is_empty());
 /// ```
 pub fn process_directory(input_dir: &Path, output_dir: &Path) -> Result<(), io::Error> {
-    fs::create_dir(output_dir)?;
+    fs::create_dir_all(output_dir)?;
 
     let mut manifest = HashMap::new();
 

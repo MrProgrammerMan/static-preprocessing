@@ -46,3 +46,31 @@ pub fn hash_file_rename(file: File) -> Result<File, io::Error> {
         ..file
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_hash_file_rename() {
+        use crate::File;
+        use crate::FileType;
+
+        let file = File {
+            filename: "example.css".to_string(),
+            file_type: FileType::CSS,
+            contents: b"body { margin: 0; }".to_vec(),
+        };
+
+        let renamed = hash_file_rename(file).unwrap();
+
+        // Verify the new filename ends with the correct extension
+        assert!(renamed.filename.ends_with(".css"));
+
+        // Verify the new filename contains a hash and is longer than just the extension
+        assert!(renamed.filename.len() > ".css".len());
+
+        // Verify the contents and file type remain unchanged
+        assert_eq!(renamed.file_type, FileType::CSS);
+        assert_eq!(renamed.contents, b"body { margin: 0; }");
+    }
+}

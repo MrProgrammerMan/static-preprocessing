@@ -1,12 +1,18 @@
-use std::collections::HashMap;
-use std::path::Path;
-use std::io;
-use std::fs;
+use std::{
+    io,
+    fs,
+    path::Path,
+    collections::HashMap
+};
 use hash::hash_file_rename;
-use lightningcss::printer::PrinterOptions;
-use lightningcss::stylesheet::MinifyOptions;
-use lightningcss::stylesheet::ParserOptions;
-use lightningcss::stylesheet::StyleSheet;
+use lightningcss::{
+    printer::PrinterOptions,
+    stylesheet::{
+        MinifyOptions,
+        ParserOptions,
+        StyleSheet
+    }
+};
 use thiserror::Error;
 
 pub mod hash;
@@ -202,7 +208,7 @@ fn process_file(
 
     let minified_css = minify_css(input_file);
     
-    let hashed_file = hash_file_rename(minified_css)?;
+    let hashed_file = hash_file_rename(minified_css?)?;
 
     manifest.insert(
         path.to_string_lossy().to_string(),
@@ -212,18 +218,29 @@ fn process_file(
     save_file(output_dir, &hashed_file)
 }
 
-fn minify_css(f: File) ->  File {
-    match f.file_type {
-        FileType::CSS => {
-            let mut ss = StyleSheet::parse(std::str::from_utf8(&f.contents).unwrap(), ParserOptions::default()).unwrap();
-            ss.minify(MinifyOptions::default()).unwrap();
-            File {
-                contents: ss.to_css(PrinterOptions{minify: true, ..PrinterOptions::default()}).unwrap().code.into_bytes(),
-                ..f
-            }
-        },
-        _ => f
+fn minify_css(f: File) ->  Result<File, LibError> {
+    if f.file_type != FileType::CSS {
+        return Ok(f);
     }
+    
+    let contents = std::str::from_utf8(&f.contents)
+        .map_err(|err| LibError::ParsingError(err.to_string()))?;
+
+    let mut ss = StyleSheet::parse(contents, ParserOptions::default())
+        .map_err(|err| LibError::ParsingError(err.to_string()))?;
+
+    ss.minify(MinifyOptions::default())
+        .map_err(|err| LibError::MinificationError(err.to_string()))?;
+
+    let minified_contents = ss.to_css(PrinterOptions { minify: true, ..PrinterOptions::default() })
+        .map_err(|err| LibError::MinificationError(err.to_string()))?
+        .code
+        .into_bytes();
+    
+    Ok(File {
+        contents: minified_contents,
+        ..f
+    })
 }
 
 /// Writes the manifest file to the output directory as pretty-printed JSON.

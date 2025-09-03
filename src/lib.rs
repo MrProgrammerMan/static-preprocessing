@@ -342,4 +342,20 @@ mod tests {
             panic!("Invalid file loaded");
         }
     }
+
+    #[test]
+    fn test_save_file() {
+        use std::fs;
+        use tempfile::tempdir;
+        
+        let dir = tempdir().unwrap();
+        let file = File {
+            filename: "hello.txt".into(),
+            file_type: FileType::Other,
+            contents: b"Hello, world!".to_vec(),
+        };
+        save_file(dir.path(), &file).unwrap();
+        let written = fs::read_to_string(dir.path().join("hello.txt")).unwrap();
+        assert_eq!(written, "Hello, world!");
+    }
 }

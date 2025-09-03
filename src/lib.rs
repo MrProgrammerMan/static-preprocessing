@@ -7,8 +7,25 @@ use lightningcss::printer::PrinterOptions;
 use lightningcss::stylesheet::MinifyOptions;
 use lightningcss::stylesheet::ParserOptions;
 use lightningcss::stylesheet::StyleSheet;
+use thiserror::Error;
 
 pub mod hash;
+
+#[derive(Error, Debug)]
+pub enum StaticPreprocessingError {
+    #[error("There was an error accessing I/O: {0}")]
+    IOError(#[from] io::Error),
+    #[error("There was a parsing error: {0}")]
+    ParsingError(String),
+    #[error("There was an error during minification: {0}")]
+    MinificationError(String),
+    #[error("There was an error during hashing: {0}")]
+    HashError(String),
+    #[error("There was an error during Image processing: {0}")]
+    ImageProcessingError(String)
+}
+
+type LibError = StaticPreprocessingError;
 
 #[derive(Debug, PartialEq)]
 pub enum FileType {
@@ -64,13 +81,13 @@ pub struct File {
 /// assert!(loaded.file_type == FileType::CSS);
 /// assert!(loaded.contents == b"body { background: #fff; }\n");
 /// ```
-pub fn load_file(path: &Path) -> Result<File, io::Error> {
+pub fn load_file(path: &Path) -> Result<File, LibError> {
     Ok(File {
         filename: path.file_name().ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Invalid file name."))?.to_string_lossy().to_string(),
         file_type: path
             .extension()
             .and_then(|ext| ext.to_str())
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Invalid file extension."))
+            .ok_or_else(|| LibError::IOError(io::Error::new(io::ErrorKind::InvalidInput, "Invalid file extension.")))
             .map(detect_file_type)?,
         contents: fs::read(path)?
     })
@@ -109,8 +126,8 @@ pub fn load_file(path: &Path) -> Result<File, io::Error> {
 /// let written = fs::read_to_string(dir.path().join("hello.txt")).unwrap();
 /// assert_eq!(written, "Hello, world!");
 /// ```
-pub fn save_file(output_dir: &Path, file: &File) -> Result<(), io::Error> {
-    fs::write(output_dir.join(&file.filename), &file.contents)
+pub fn save_file(output_dir: &Path, file: &File) -> Result<(), LibError> {
+    fs::write(output_dir.join(&file.filename), &file.contents).map_err(|err| LibError::IOError(err))
 }
 
 /// Processes all files in a directory tree and writes them to an output directory with hashed filenames.
@@ -161,7 +178,7 @@ pub fn save_file(output_dir: &Path, file: &File) -> Result<(), io::Error> {
 ///
 /// assert!(!entries.is_empty());
 /// ```
-pub fn process_directory(input_dir: &Path, output_dir: &Path) -> Result<(), io::Error> {
+pub fn process_directory(input_dir: &Path, output_dir: &Path) -> Result<(), LibError> {
     fs::create_dir_all(output_dir)?;
 
     let mut manifest = HashMap::new();
@@ -180,7 +197,7 @@ fn process_file(
     path: &Path,
     output_dir: &Path,
     manifest: &mut HashMap<String, String>,
-) -> Result<(), io::Error> {
+) -> Result<(), LibError> {
     let input_file = load_file(path)?;
 
     let minified_css = minify_css(input_file);
@@ -210,11 +227,11 @@ fn minify_css(f: File) ->  File {
 }
 
 /// Writes the manifest file to the output directory as pretty-printed JSON.
-fn write_manifest(output_dir: &Path, manifest: &HashMap<String, String>) -> Result<(), io::Error> {
+fn write_manifest(output_dir: &Path, manifest: &HashMap<String, String>) -> Result<(), LibError> {
     let manifest_path = output_dir.join("manifest.json");
     let json = serde_json::to_string_pretty(manifest)
         .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-    fs::write(manifest_path, json)
+    fs::write(manifest_path, json).map_err(|err| LibError::IOError(err))
 }
 
 /// Recursively traverses a directory tree, applying a function to each file found.
@@ -255,7 +272,7 @@ fn write_manifest(output_dir: &Path, manifest: &HashMap<String, String>) -> Resu
 ///
 /// assert_eq!(count, 1);
 /// ```
-pub fn for_each_file<F: FnMut(&Path) -> io::Result<()>>(path: &Path, f: &mut F) -> io::Result<()> {
+pub fn for_each_file<F: FnMut(&Path) -> Result<(), LibError>>(path: &Path, f: &mut F) -> Result<(), LibError> {
     if path.is_dir() {
         for entry in fs::read_dir(path)? {
             let entry = entry?;
